@@ -38,7 +38,12 @@ declare global {
     interface VscodeStateApi {
         getState(): PetPanelState | undefined; // API is actually Any, but we want it to be typed.
         setState(state: PetPanelState): void;
-        postMessage(message: WebviewMessage | PetChatRequest): void;
+        postMessage(
+            message:
+                | WebviewMessage
+                | PetChatRequest
+                | { command: 'pet-panel-ready'; restored: boolean },
+        ): void;
     }
     function acquireVsCodeApi(): VscodeStateApi;
 }
@@ -398,6 +403,10 @@ export function petPanelApp(
 
     window.addEventListener('load', () => {
         windowLoaded = true;
+        stateApi?.postMessage({
+            command: 'pet-panel-ready',
+            restored: !!state,
+        });
         allPets.pets.forEach(({ chat }) => chat?.resume());
     });
 

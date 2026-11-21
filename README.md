@@ -55,6 +55,12 @@ Some important things you can do:
 - [Change the background](https://tonybaloney.github.io/vscode-pets/themes/)
 - [Throw a ball and play with the pets](https://tonybaloney.github.io/vscode-pets/pets/#throwing-a-ball)
 
+### Open vsPal in a popup
+
+In desktop VS Code, run **Open vsPal Popup** from the Command Palette. The playground opens in a floating VS Code window with the pet actions in its toolbar. You can also open the popup from the vsPal editor tab. Set **vsPal › Position** to **Popup** to use it when starting a pet coding session.
+
+To use vsPal from the **Agents window**, install this build in your default VS Code profile and run **Open vsPal Popup** from the Agents window’s Command Palette. If you previously disabled the extension there, enable it under **Customizations → Extensions**. [VS Code Agents window extension settings](https://code.visualstudio.com/docs/agents/run/agents-window-configuration#extensions)
+
 ## Translation
 
 Visit the [Crowdin Project](https://crowdin.com/project/vscode-pets) in case you'd like to help with the translations. It will be synced automatically to the repository. You can also request a new language in the [Discussions](https://crowdin.com/project/vscode-pets/discussions) section.

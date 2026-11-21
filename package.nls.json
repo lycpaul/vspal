@@ -1,4 +1,6 @@
 {
+    "vscode-pets.open-popup.title": "Open vsPal Popup",
+    "vscode-pets.position.popup": "Popup",
     "vscode-pets.petChat.model.description": "Codex CLI model ID for pet chat, for example gpt-6-luna.",
     "vscode-pets.petChat.reasoningEffort.description": "Reasoning effort for pet chat. Choose an effort supported by the selected Codex model.",
     "vscode-pets.pat-pet.title": "Pat the pet",

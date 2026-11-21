@@ -34,8 +34,14 @@
     ],
     "license": "MIT",
     "icon": "icon.png",
+    "capabilities": {
+        "agentsWindow": {
+            "supported": true
+        }
+    },
     "activationEvents": [
         "onCommand:vscode-pets.start",
+        "onCommand:vscode-pets.open-popup",
         "onCommand:vscode-pets.throw-with-mouse",
         "onCommand:vscode-pets.throw-ball",
         "onCommand:vscode-pets.pat-pet",
@@ -66,6 +72,28 @@
             ]
         },
         "menus": {
+            "editor/title": [
+                {
+                    "command": "vscode-pets.spawn-pet",
+                    "when": "activeWebviewPanelId =~ /^(mainThreadWebview-)?petCoding$/",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "vscode-pets.throw-ball",
+                    "when": "activeWebviewPanelId =~ /^(mainThreadWebview-)?petCoding$/",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "vscode-pets.pat-pet",
+                    "when": "activeWebviewPanelId =~ /^(mainThreadWebview-)?petCoding$/",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "vscode-pets.open-popup",
+                    "when": "activeWebviewPanelId =~ /^(mainThreadWebview-)?petCoding$/ && !isWeb && !isAuxiliaryWindowFocused",
+                    "group": "navigation@4"
+                }
+            ],
             "view/title": [
                 {
                     "command": "vscode-pets.spawn-pet",
@@ -100,6 +128,12 @@
                 "title": "%vscode-pets.start.title%",
                 "category": "Pet Coding",
                 "icon": "media/dog.svg"
+            },
+            {
+                "command": "vscode-pets.open-popup",
+                "title": "%vscode-pets.open-popup.title%",
+                "icon": "$(link-external)",
+                "enablement": "!isWeb"
             },
             {
                 "command": "vscode-pets.throw-with-mouse",
@@ -386,13 +420,15 @@
                         "type": "string",
                         "enum": [
                             "panel",
-                            "explorer"
+                            "explorer",
+                            "popup"
                         ],
                         "default": "explorer",
                         "description": "%vscode-pets.position.description%",
                         "enumItemLabels": [
                             "%vscode-pets.position.panel%",
-                            "%vscode-pets.position.explorer%"
+                            "%vscode-pets.position.explorer%",
+                            "%vscode-pets.position.popup%"
                         ]
                     },
                     "vscode-pets.theme": {

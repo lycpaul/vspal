@@ -151,6 +151,7 @@ export const enum PetSize {
 export const enum ExtPosition {
     panel = 'panel',
     explorer = 'explorer',
+    popup = 'popup',
 }
 
 export const enum Theme {

@@ -277,63 +277,79 @@ async function handleRemovePetMessage(
 }
 
 function getPetPanel(): IPetPanel | undefined {
+    const editorPanel = PetPanel.currentPanel;
     if (
         getConfigurationPosition() === ExtPosition.explorer &&
-        webviewViewProvider
+        webviewViewProvider &&
+        !editorPanel?.active &&
+        (!editorPanel || webviewViewProvider.visible)
     ) {
         return webviewViewProvider;
-    } else if (PetPanel.currentPanel) {
-        return PetPanel.currentPanel;
-    } else {
-        return undefined;
     }
+    return editorPanel;
 }
 
 function getWebview(): vscode.Webview | undefined {
-    if (
-        getConfigurationPosition() === ExtPosition.explorer &&
-        webviewViewProvider
-    ) {
-        return webviewViewProvider.getWebview();
-    } else if (PetPanel.currentPanel) {
-        return PetPanel.currentPanel.getWebview();
+    return getPetPanel()?.getWebview();
+}
+
+async function openPetEditor(
+    context: vscode.ExtensionContext,
+): Promise<PetPanel> {
+    const spec = PetSpecification.fromConfiguration();
+    const isNew = !PetPanel.currentPanel;
+    const initialPets = isNew
+        ? PetSpecification.collectionFromMemento(context, spec.size)
+        : [];
+    const panel = PetPanel.createOrShow(
+        context.extensionUri,
+        spec.color,
+        spec.type,
+        spec.size,
+        getConfiguredTheme(),
+        getConfiguredThemeKind(),
+        getThrowWithMouseConfiguration(),
+        getEffectsDisabledConfiguration(),
+        initialPets,
+    );
+    if (isNew && initialPets.length) {
+        await storeCollectionAsMemento(context, initialPets);
+    }
+    return panel;
+}
+
+async function openPetPopup(context: vscode.ExtensionContext): Promise<void> {
+    const panel = await openPetEditor(context);
+    if (!(await panel.openPopup())) {
+        void vscode.window.showInformationMessage(
+            vscode.l10n.t(
+                'This VS Code window could not detach vsPal. The playground is open in an editor tab.',
+            ),
+        );
     }
 }
 
 export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('vscode-pets.start', async () => {
-            if (
-                getConfigurationPosition() === ExtPosition.explorer &&
+            const position = getConfigurationPosition();
+            if (position === ExtPosition.popup) {
+                await openPetPopup(context);
+            } else if (
+                position === ExtPosition.explorer &&
                 webviewViewProvider
             ) {
                 await vscode.commands.executeCommand('petsView.focus');
             } else {
-                const spec = PetSpecification.fromConfiguration();
-                PetPanel.createOrShow(
-                    context.extensionUri,
-                    spec.color,
-                    spec.type,
-                    spec.size,
-                    getConfiguredTheme(),
-                    getConfiguredThemeKind(),
-                    getThrowWithMouseConfiguration(),
-                    getEffectsDisabledConfiguration(),
-                );
-
-                if (PetPanel.currentPanel) {
-                    var collection = PetSpecification.collectionFromMemento(
-                        context,
-                        getConfiguredSize(),
-                    );
-                    collection.forEach((item) => {
-                        PetPanel.currentPanel?.spawnPet(item);
-                    });
-                    // Store the collection in the memento, incase any of the null values (e.g. name) have been set
-                    await storeCollectionAsMemento(context, collection);
-                }
+                await openPetEditor(context);
             }
         }),
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('vscode-pets.open-popup', () =>
+            openPetPopup(context),
+        ),
     );
 
     spawnPetStatusBar = vscode.window.createStatusBarItem(
@@ -417,7 +433,7 @@ export function activate(context: vscode.ExtensionContext) {
                     context,
                 );
             } else {
-                await createPetPlayground(context);
+                await openPetEditor(context);
             }
         }),
     );
@@ -428,7 +444,7 @@ export function activate(context: vscode.ExtensionContext) {
             if (panel !== undefined) {
                 panel.rollCall();
             } else {
-                await createPetPlayground(context);
+                await openPetEditor(context);
             }
         }),
     );
@@ -579,10 +595,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('vscode-pets.spawn-pet', async () => {
             const panel = getPetPanel();
-            if (
-                getConfigurationPosition() === ExtPosition.explorer &&
-                webviewViewProvider
-            ) {
+            if (panel && panel === webviewViewProvider) {
                 await vscode.commands.executeCommand('petsView.focus');
             }
             if (panel) {
@@ -681,7 +694,7 @@ export function activate(context: vscode.ExtensionContext) {
                 collection.push(spec);
                 await storeCollectionAsMemento(context, collection);
             } else {
-                await createPetPlayground(context);
+                await openPetEditor(context);
                 await vscode.window.showInformationMessage(
                     vscode.l10n.t(
                         "A Pet Playground has been created. You can now use the 'Spawn Additional Pet' Command to add more pets.",
@@ -696,10 +709,7 @@ export function activate(context: vscode.ExtensionContext) {
             'vscode-pets.change-theme',
             async () => {
                 const panel = getPetPanel();
-                if (
-                    getConfigurationPosition() === ExtPosition.explorer &&
-                    webviewViewProvider
-                ) {
+                if (panel && panel === webviewViewProvider) {
                     await vscode.commands.executeCommand('petsView.focus');
                 }
                 if (panel) {
@@ -728,7 +738,7 @@ export function activate(context: vscode.ExtensionContext) {
                             vscode.ConfigurationTarget.Global,
                         );
                 } else {
-                    await createPetPlayground(context);
+                    await openPetEditor(context);
                     await vscode.window.showInformationMessage(
                         vscode.l10n.t(
                             "A Pet Playground has been created. You can now use the 'Change Theme' Command to change the theme.",
@@ -748,7 +758,7 @@ export function activate(context: vscode.ExtensionContext) {
                     panel.resetPets();
                     await storeCollectionAsMemento(context, []);
                 } else {
-                    await createPetPlayground(context);
+                    await openPetEditor(context);
                     await vscode.window.showInformationMessage(
                         vscode.l10n.t(
                             "A Pet Playground has been created. You can now use the 'Remove All Pets' Command to remove all pets.",
@@ -846,6 +856,7 @@ function getWebviewOptions(
 }
 
 interface IPetPanel {
+    getWebview(): vscode.Webview;
     throwBall(icon: BallIcon): void;
     resetPets(): void;
     spawnPet(spec: PetSpecification): void;
@@ -1004,7 +1015,7 @@ class PetWebviewContainer implements IPetPanel {
         });
     }
 
-    protected getWebview(): vscode.Webview {
+    public getWebview(): vscode.Webview {
         throw new Error('Not implemented');
     }
 
@@ -1217,6 +1228,87 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
 
     private readonly _panel: vscode.WebviewPanel;
 
+    private popupGroup?: vscode.TabGroup;
+    private openingPopup = false;
+
+    get active(): boolean {
+        return this._panel.active;
+    }
+
+    async openPopup(): Promise<boolean> {
+        if (this.openingPopup) {
+            return true;
+        }
+        this.openingPopup = true;
+        try {
+            const moveCommand = 'workbench.action.moveEditorToNewWindow';
+            if (!(await vscode.commands.getCommands()).includes(moveCommand)) {
+                return false;
+            }
+
+            this._panel.reveal();
+            if (this.popupGroup?.tabs.some(PetPanel.isPetTab)) {
+                return true;
+            }
+            const group = await this.waitForTabGroup(() =>
+                this.activeTabGroup(),
+            );
+            if (!group || group !== this.activeTabGroup()) {
+                return false;
+            }
+            await vscode.commands.executeCommand(moveCommand);
+            this.popupGroup = await this.waitForTabGroup(() =>
+                vscode.window.tabGroups.all.find(
+                    (candidate) =>
+                        candidate !== group &&
+                        candidate.tabs.some(PetPanel.isPetTab),
+                ),
+            );
+            return this.popupGroup !== undefined;
+        } catch {
+            return false;
+        } finally {
+            this.openingPopup = false;
+        }
+    }
+
+    private static isPetTab(tab: vscode.Tab | undefined): boolean {
+        const input = tab?.input;
+        return (
+            input instanceof vscode.TabInputWebview &&
+            (input.viewType === PetPanel.viewType ||
+                input.viewType === `mainThreadWebview-${PetPanel.viewType}`)
+        );
+    }
+
+    private activeTabGroup(): vscode.TabGroup | undefined {
+        const group = vscode.window.tabGroups.activeTabGroup;
+        return PetPanel.isPetTab(group.activeTab) ? group : undefined;
+    }
+
+    private waitForTabGroup(
+        findGroup: () => vscode.TabGroup | undefined,
+    ): Promise<vscode.TabGroup | undefined> {
+        return new Promise((resolve) => {
+            const check = () => {
+                const group = findGroup();
+                if (group) {
+                    finish(group);
+                }
+            };
+            const finish = (group?: vscode.TabGroup) => {
+                clearTimeout(timeout);
+                tabs.dispose();
+                groups.dispose();
+                resolve(group);
+            };
+            const tabs = vscode.window.tabGroups.onDidChangeTabs(check);
+            const groups = vscode.window.tabGroups.onDidChangeTabGroups(check);
+            const timeout = setTimeout(finish, 1500);
+            check();
+        });
+    }
+
     public static createOrShow(
         extensionUri: vscode.Uri,
         petColor: PetColor,
@@ -1226,25 +1318,22 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
         themeKind: ColorThemeKind,
         throwBallWithMouse: boolean,
         disableEffects: boolean,
-    ) {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
-        // If we already have a panel, show it.
-        if (PetPanel.currentPanel) {
+        initialPets: PetSpecification[] = [],
+    ): PetPanel {
+        const current = PetPanel.currentPanel;
+        if (current) {
             if (
-                petColor === PetPanel.currentPanel.petColor() &&
-                petType === PetPanel.currentPanel.petType() &&
-                petSize === PetPanel.currentPanel.petSize()
+                petColor !== current.petColor() ||
+                petType !== current.petType() ||
+                petSize !== current.petSize()
             ) {
-                PetPanel.currentPanel._panel.reveal(column);
-                return;
-            } else {
-                PetPanel.currentPanel.updatePetColor(petColor);
-                PetPanel.currentPanel.updatePetType(petType);
-                PetPanel.currentPanel.updatePetSize(petSize);
-                PetPanel.currentPanel.update();
+                current.updatePetColor(petColor);
+                current.updatePetType(petType);
+                current.updatePetSize(petSize);
+                current.update();
             }
+            current._panel.reveal();
+            return current;
         }
 
         // Otherwise, create a new panel.
@@ -1265,7 +1354,9 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
             themeKind,
             throwBallWithMouse,
             disableEffects,
+            initialPets,
         );
+        return PetPanel.currentPanel;
     }
 
     public static revive(
@@ -1302,6 +1393,7 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
         themeKind: ColorThemeKind,
         throwBallWithMouse: boolean,
         disableEffects: boolean,
+        initialPets: PetSpecification[] = [],
     ) {
         super(
             extensionUri,
@@ -1317,28 +1409,23 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
         this._panel = panel;
         this._panel.title = 'vsPal';
 
-        // Set the webview's initial html content
-        this._update();
-
-        // Listen for when the panel is disposed
-        // This happens when the user closes the panel or when the panel is closed programmatically
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-
-        // Update the content based on view changes
-        this._panel.onDidChangeViewState(
-            () => {
-                this.update();
+        this._panel.webview.onDidReceiveMessage(
+            (message) => {
+                if (message.command === 'pet-panel-ready') {
+                    const pets = initialPets;
+                    initialPets = [];
+                    if (!message.restored) {
+                        pets.forEach((pet) => this.spawnPet(pet));
+                    }
+                    return;
+                }
+                return handleWebviewMessage(this._panel.webview, message);
             },
             null,
             this._disposables,
         );
-
-        // Handle messages from the webview
-        this._panel.webview.onDidReceiveMessage(
-            (message) => handleWebviewMessage(this._panel.webview, message),
-            null,
-            this._disposables,
-        );
+        this._update();
     }
 
     public tick() {
@@ -1356,12 +1443,6 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
         super.dispose();
     }
 
-    public update() {
-        if (this._panel.visible) {
-            this._update();
-        }
-    }
-
     getWebview(): vscode.Webview {
         return this._panel.webview;
     }
@@ -1374,6 +1455,10 @@ class PetWebviewViewProvider extends PetWebviewContainer {
     public static readonly viewType = 'petsView';
 
     private _webviewView?: vscode.WebviewView;
+
+    get visible(): boolean {
+        return this._webviewView?.visible ?? false;
+    }
 
     resolveWebviewView(webviewView: vscode.WebviewView): void | Thenable<void> {
         this._webviewView = webviewView;
@@ -1420,35 +1505,4 @@ function getNonce() {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
-}
-
-async function createPetPlayground(context: vscode.ExtensionContext) {
-    const spec = PetSpecification.fromConfiguration();
-    PetPanel.createOrShow(
-        context.extensionUri,
-        spec.color,
-        spec.type,
-        spec.size,
-        getConfiguredTheme(),
-        getConfiguredThemeKind(),
-        getThrowWithMouseConfiguration(),
-        getEffectsDisabledConfiguration(),
-    );
-    if (PetPanel.currentPanel) {
-        var collection = PetSpecification.collectionFromMemento(
-            context,
-            getConfiguredSize(),
-        );
-        collection.forEach((item) => {
-            PetPanel.currentPanel?.spawnPet(item);
-        });
-        await storeCollectionAsMemento(context, collection);
-    } else {
-        var collection = PetSpecification.collectionFromMemento(
-            context,
-            getConfiguredSize(),
-        );
-        collection.push(spec);
-        await storeCollectionAsMemento(context, collection);
-    }
 }
