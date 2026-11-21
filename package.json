@@ -1,6 +1,6 @@
 {
     "name": "vscode-pets",
-    "displayName": "vscode-pets",
+    "displayName": "vsPal",
     "description": "Pets for your VS Code",
     "version": "1.37.0",
     "engines": {
@@ -38,6 +38,7 @@
         "onCommand:vscode-pets.start",
         "onCommand:vscode-pets.throw-with-mouse",
         "onCommand:vscode-pets.throw-ball",
+        "onCommand:vscode-pets.pat-pet",
         "onCommand:vscode-pets.spawn-pet",
         "onCommand:vscode-pets.delete-pet",
         "onCommand:vscode-pets.remove-all-pets",
@@ -77,14 +78,19 @@
                     "group": "navigation@2"
                 },
                 {
-                    "command": "vscode-pets.delete-pet",
+                    "command": "vscode-pets.pat-pet",
                     "when": "view == petsView",
                     "group": "navigation@3"
                 },
                 {
-                    "command": "vscode-pets.change-theme",
+                    "command": "vscode-pets.delete-pet",
                     "when": "view == petsView",
                     "group": "navigation@4"
+                },
+                {
+                    "command": "vscode-pets.change-theme",
+                    "when": "view == petsView",
+                    "group": "navigation@5"
                 }
             ]
         },
@@ -112,6 +118,12 @@
                     "dark": "media/icon/dark-circle-outline.svg",
                     "light": "media/icon/light-circle-outline.svg"
                 }
+            },
+            {
+                "command": "vscode-pets.pat-pet",
+                "title": "%vscode-pets.pat-pet.title%",
+                "category": "Pet Coding",
+                "icon": "$(comment-discussion)"
             },
             {
                 "command": "vscode-pets.export-pet-list",
@@ -167,12 +179,28 @@
         ],
         "configuration": [
             {
+                "title": "vsPal",
                 "properties": {
                     "vscode-pets.petColor": {
                         "type": "string",
                         "enum": [
                             "black",
                             "blue",
+                            "codex",
+                            "claudecode",
+                            "side_eye",
+                            "plus_eyes",
+                            "equals_eyes",
+                            "cross_eyes",
+                            "slant_eyes",
+                            "arch_eyes",
+                            "caret_eyes",
+                            "ring_eyes",
+                            "dot_eyes",
+                            "squint_eyes",
+                            "openai_light",
+                            "openai_dark",
+                            "octocat",
                             "lightbrown",
                             "brown",
                             "whiteface",
@@ -218,6 +246,21 @@
                         "enumItemLabels": [
                             "%vscode-pets.petColor.black%",
                             "%vscode-pets.petColor.blue%",
+                            "%vscode-pets.petColor.codex%",
+                            "%vscode-pets.petColor.claudecode%",
+                            "%vscode-pets.petColor.side_eye%",
+                            "%vscode-pets.petColor.plus_eyes%",
+                            "%vscode-pets.petColor.equals_eyes%",
+                            "%vscode-pets.petColor.cross_eyes%",
+                            "%vscode-pets.petColor.slant_eyes%",
+                            "%vscode-pets.petColor.arch_eyes%",
+                            "%vscode-pets.petColor.caret_eyes%",
+                            "%vscode-pets.petColor.ring_eyes%",
+                            "%vscode-pets.petColor.dot_eyes%",
+                            "%vscode-pets.petColor.squint_eyes%",
+                            "%vscode-pets.petColor.openai_light%",
+                            "%vscode-pets.petColor.openai_dark%",
+                            "%vscode-pets.petColor.octocat%",
                             "%vscode-pets.petColor.lightbrown%",
                             "%vscode-pets.petColor.brown%",
                             "%vscode-pets.petColor.whiteface%",
@@ -284,6 +327,7 @@
                             "bunny",
                             "skeleton",
                             "deno",
+                            "agent",
                             "finley",
                             "morph",
                             "panda"
@@ -315,6 +359,7 @@
                             "%vscode-pets.petType.bunny%",
                             "%vscode-pets.petType.skeleton%",
                             "%vscode-pets.petType.deno%",
+                            "%vscode-pets.petType.agent%",
                             "%vscode-pets.petType.finley%",
                             "%vscode-pets.petType.morph%",
                             "%vscode-pets.petType.panda%"
@@ -374,6 +419,19 @@
                             "%vscode-pets.theme.library%",
                             "%vscode-pets.theme.barn%"
                         ]
+                    },
+                    "vscode-pets.petChat.model": {
+                        "type": "string",
+                        "default": "gpt-6-luna",
+                        "scope": "application",
+                        "description": "%vscode-pets.petChat.model.description%"
+                    },
+                    "vscode-pets.petChat.reasoningEffort": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high", "xhigh", "max", "ultra"],
+                        "default": "low",
+                        "scope": "application",
+                        "description": "%vscode-pets.petChat.reasoningEffort.description%"
                     },
                     "vscode-pets.throwBallWithMouse": {
                         "type": "boolean",

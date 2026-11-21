@@ -4,6 +4,26 @@ import { Entry, open } from 'yauzl';
 import { Cat } from '../panel/pets/cat';
 
 const pets: { [key: string]: { colors: string[]; states: string[] } } = {
+    agent: {
+        colors: [
+            'codex',
+            'claudecode',
+            'side_eye',
+            'plus_eyes',
+            'equals_eyes',
+            'cross_eyes',
+            'slant_eyes',
+            'arch_eyes',
+            'caret_eyes',
+            'ring_eyes',
+            'dot_eyes',
+            'squint_eyes',
+            'openai_light',
+            'openai_dark',
+            'octocat',
+        ],
+        states: ['idle', 'run', 'swipe', 'walk', 'walk_fast', 'with_ball'],
+    },
     bunny: {
         colors: ['white', 'purple', 'gray'],
         states: [

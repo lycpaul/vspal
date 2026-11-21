@@ -2,6 +2,10 @@ import * as vscode from 'vscode';
 import { ColorThemeKind } from 'vscode';
 import {
     PetSize,
+    PetChatRequest,
+    PetChatReply,
+    PET_CHAT_EFFORTS,
+    BallIcon,
     PetColor,
     PetType,
     ExtPosition,
@@ -12,6 +16,7 @@ import {
     ALL_SCALES,
     ALL_THEMES,
 } from '../common/types';
+import { askCodex } from './codexChat';
 import { randomName } from '../common/names';
 import * as localize from '../common/localize';
 import { availableColors, normalizeColor } from '../panel/pets';
@@ -124,7 +129,7 @@ export class PetSpecification {
         this.type = type;
         this.size = size;
         if (!name) {
-            this.name = randomName(type);
+            this.name = randomName(type, color);
         } else {
             this.name = name;
         }
@@ -374,10 +379,30 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('vscode-pets.throw-ball', () => {
+        vscode.commands.registerCommand('vscode-pets.throw-ball', async () => {
             const panel = getPetPanel();
-            if (panel !== undefined) {
-                panel.throwBall();
+            if (!panel) {
+                return;
+            }
+
+            const choices: (vscode.QuickPickItem & { icon: BallIcon })[] = [
+                { label: vscode.l10n.t('OpenAI icon'), icon: 'openai' },
+                { label: vscode.l10n.t('Claude icon'), icon: 'claude' },
+            ];
+            const choice = await vscode.window.showQuickPick(choices, {
+                placeHolder: vscode.l10n.t('Choose an icon to throw'),
+            });
+            if (choice) {
+                getPetPanel()?.throwBall(choice.icon);
+            }
+        }),
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('vscode-pets.pat-pet', () => {
+            const webview = getWebview();
+            if (webview) {
+                void webview.postMessage({ command: 'pat-pet' });
             }
         }),
     );
@@ -585,6 +610,7 @@ export function activate(context: vscode.ExtensionContext) {
                 }
                 var petColor: PetColor = DEFAULT_COLOR;
                 const possibleColors = availableColors(selectedPetType.value);
+                const isAgent = selectedPetType.value === PetType.agent;
 
                 if (possibleColors.length > 1) {
                     const colorQuickPickItems = await Promise.all(
@@ -594,6 +620,9 @@ export function activate(context: vscode.ExtensionContext) {
                             )
                             .map(async (qpi) => ({
                                 ...qpi,
+                                label: isAgent
+                                    ? randomName(PetType.agent, qpi.value)
+                                    : qpi.label,
                                 iconPath: await getPetIconPath(
                                     selectedPetType.value,
                                     qpi.value,
@@ -604,7 +633,9 @@ export function activate(context: vscode.ExtensionContext) {
                     var selectedColor = await vscode.window.showQuickPick(
                         colorQuickPickItems,
                         {
-                            placeHolder: vscode.l10n.t('Select a color'),
+                            placeHolder: isAgent
+                                ? vscode.l10n.t('Select an agent')
+                                : vscode.l10n.t('Select a color'),
                         },
                     );
                     if (selectedColor === undefined) {
@@ -628,7 +659,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const name = await vscode.window.showInputBox({
                     placeHolder: vscode.l10n.t('Leave blank for a random name'),
                     prompt: vscode.l10n.t('Name your pet'),
-                    value: randomName(selectedPetType.value),
+                    value: randomName(selectedPetType.value, petColor),
                 });
                 const spec = new PetSpecification(
                     petColor,
@@ -815,7 +846,7 @@ function getWebviewOptions(
 }
 
 interface IPetPanel {
-    throwBall(): void;
+    throwBall(icon: BallIcon): void;
     resetPets(): void;
     spawnPet(spec: PetSpecification): void;
     deletePet(petName: string, petType: string, petColor: string): void;
@@ -930,9 +961,10 @@ class PetWebviewContainer implements IPetPanel {
         });
     }
 
-    public throwBall() {
+    public throwBall(icon: BallIcon) {
         void this.getWebview().postMessage({
             command: 'throw-ball',
+            icon,
         });
     }
 
@@ -1050,7 +1082,7 @@ class PetWebviewContainer implements IPetPanel {
                     src: url('${silkScreenFontPath}') format('truetype');
                 }
                 </style>
-				<title>VS Code Pets</title>
+				<title>vsPal</title>
 			</head>
 			<body>
                 <div id="petCanvasContainer">
@@ -1087,7 +1119,81 @@ class PetWebviewContainer implements IPetPanel {
     }
 }
 
-function handleWebviewMessage(message: WebviewMessage) {
+// A reloaded webview may reconnect to a request the host already started.
+const pendingPetChats = new Map<string, Promise<PetChatReply>>();
+const recentPetChatReplies = new Map<string, PetChatReply>();
+
+async function replyToPetChat(request: PetChatRequest): Promise<PetChatReply> {
+    const { id } = request;
+    const recent = recentPetChatReplies.get(id);
+    if (recent) {
+        return recent;
+    }
+    const pending = pendingPetChats.get(id);
+    if (pending) {
+        return pending;
+    }
+
+    const chatConfig = vscode.workspace.getConfiguration('vscode-pets.petChat');
+    const requestedModel = request.options?.model;
+    const modelOverride =
+        typeof requestedModel === 'string' && requestedModel.length <= 128
+            ? requestedModel.trim()
+            : '';
+    const model =
+        modelOverride ||
+        chatConfig.get<string>('model')?.trim() ||
+        'gpt-6-luna';
+    const effort =
+        PET_CHAT_EFFORTS.find(
+            (value) => value === request.options?.reasoningEffort,
+        ) ?? chatConfig.get<string>('reasoningEffort', 'low');
+    const run = askCodex(request, model, effort)
+        .then((text): PetChatReply => ({ command: 'pet-chat-reply', id, text }))
+        .catch((): PetChatReply => ({ command: 'pet-chat-reply', id }));
+    pendingPetChats.set(id, run);
+    const reply = await run;
+    pendingPetChats.delete(id);
+    recentPetChatReplies.set(id, reply);
+    if (recentPetChatReplies.size > 64) {
+        const oldest = recentPetChatReplies.keys().next().value;
+        if (oldest !== undefined) {
+            recentPetChatReplies.delete(oldest);
+        }
+    }
+    return reply;
+}
+
+async function handleWebviewMessage(
+    webview: vscode.Webview,
+    message: WebviewMessage | PetChatRequest,
+) {
+    if (message.command === 'pet-chat' && 'turns' in message) {
+        const { id, petName, turns } = message;
+        if (
+            typeof id !== 'string' ||
+            typeof petName !== 'string' ||
+            petName.length > 256 ||
+            !Array.isArray(turns) ||
+            turns.length < 1 ||
+            turns.length > 12 ||
+            !turns.every(
+                (turn) =>
+                    (turn?.role === 'user' || turn?.role === 'pet') &&
+                    typeof turn.text === 'string' &&
+                    turn.text.length <= 2000,
+            )
+        ) {
+            return;
+        }
+
+        await webview.postMessage(await replyToPetChat(message));
+        return;
+    }
+    if (!('text' in message)) {
+        return;
+    }
+
     switch (message.command) {
         case 'alert':
             void vscode.window.showErrorMessage(message.text);
@@ -1144,7 +1250,7 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
         // Otherwise, create a new panel.
         const panel = vscode.window.createWebviewPanel(
             PetPanel.viewType,
-            vscode.l10n.t('Pet Panel'),
+            'vsPal',
             vscode.ViewColumn.Two,
             getWebviewOptions(extensionUri),
         );
@@ -1209,6 +1315,7 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
         );
 
         this._panel = panel;
+        this._panel.title = 'vsPal';
 
         // Set the webview's initial html content
         this._update();
@@ -1228,7 +1335,7 @@ class PetPanel extends PetWebviewContainer implements IPetPanel {
 
         // Handle messages from the webview
         this._panel.webview.onDidReceiveMessage(
-            handleWebviewMessage,
+            (message) => handleWebviewMessage(this._panel.webview, message),
             null,
             this._disposables,
         );
@@ -1275,7 +1382,7 @@ class PetWebviewViewProvider extends PetWebviewContainer {
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
         webviewView.webview.onDidReceiveMessage(
-            handleWebviewMessage,
+            (message) => handleWebviewMessage(webviewView.webview, message),
             null,
             this._disposables,
         );

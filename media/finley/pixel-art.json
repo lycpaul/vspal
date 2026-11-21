@@ -15,12 +15,12 @@
     "W": "#FFF1D5FF",
     "O": "#F7A13AFF",
     "R": "#ED7564FF",
-    "S": "#29C249FF",
+    "S": "#E4E4E4FF",
     "H": "#B78759FF",
     "P": "#ACCAC6FF",
     "Y": "#F2D769FF",
-    "G": "#2ED851FF",
-    "g": "#25AD41FF"
+    "G": "#FFFFFFFF",
+    "g": "#CCCCCCFF"
   },
   "sprites": {
     "standing-folds": [

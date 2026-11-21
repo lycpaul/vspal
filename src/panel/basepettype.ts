@@ -44,6 +44,7 @@ export abstract class BasePetType implements IPetType {
     petRoot: string;
     _floor: number;
     _friend: IPetType | undefined;
+    private readonly reaction: HTMLSpanElement;
     private _name: string;
     private _speed: number;
     private _size: PetSize;
@@ -66,6 +67,9 @@ export abstract class BasePetType implements IPetType {
         this.el = spriteElement;
         this.collision = collisionElement;
         this.speech = speechElement;
+        this.reaction = speechElement.ownerDocument.createElement('span');
+        this.reaction.className = 'pet-reaction';
+        this.speech.replaceChildren(this.reaction);
         this.petRoot = petRoot;
         this._floor = floor;
         this._left = left;
@@ -158,7 +162,7 @@ export abstract class BasePetType implements IPetType {
 
     get hello(): string {
         // return the sound of the name of the animal
-        return ` says hello 👋!`;
+        return ` says hello 🤗!`;
     }
 
     getState(): PetInstanceState {
@@ -240,15 +244,15 @@ export abstract class BasePetType implements IPetType {
     }
 
     showSpeechBubble(message: string, duration: number = 3000) {
-        this.speech.innerHTML = message;
-        this.speech.style.display = 'block';
+        this.reaction.textContent = message;
+        this.speech.setAttribute('data-reaction-visible', '');
         setTimeout(() => {
             this.hideSpeechBubble();
         }, duration);
     }
 
     hideSpeechBubble() {
-        this.speech.style.display = 'none';
+        this.speech.removeAttribute('data-reaction-visible');
     }
 
     swipe() {
@@ -259,7 +263,7 @@ export abstract class BasePetType implements IPetType {
         this.holdStateEnum = this.currentStateEnum;
         this.currentStateEnum = States.swipe;
         this.currentState = resolveState(this.currentStateEnum, this);
-        this.showSpeechBubble('👋');
+        this.showSpeechBubble('🤗');
     }
 
     chase(ballState: BallState, canvas: HTMLCanvasElement) {

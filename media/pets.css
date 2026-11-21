@@ -227,3 +227,247 @@ img.pet {
 	border: 5px solid;
 	border-color: #fff transparent transparent #fff;
 }
+
+.bubble:not([data-reaction-visible]):not([data-chat-status]),
+.bubble[data-chat-status] > .pet-reaction,
+.bubble:not([data-chat-status]) > .pet-chat-bubble-status {
+	display: none;
+}
+
+.pet-chat-bubble-status {
+	font-size: max(16px, 1em);
+}
+
+.pat-mode .bubble,
+.bubble[data-chat-status] {
+	cursor: pointer;
+	z-index: calc(var(--collision-z-index) + 1);
+}
+
+.pet-chat {
+	width: min(400px, calc(100% - 16px));
+	max-height: calc(100% - 16px);
+	margin: auto;
+	padding: 0;
+	color: var(--vscode-editor-foreground);
+	background: var(--vscode-editor-background);
+	border: 1px solid var(--vscode-widget-border, var(--vscode-focusBorder));
+	border-radius: 16px;
+	box-shadow: 0 16px 48px rgb(0 0 0 / 30%);
+}
+
+.pet-chat[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.pet-chat::backdrop {
+	background: rgb(0 0 0 / 48%);
+	backdrop-filter: blur(2px);
+}
+
+.pet-chat header,
+.pet-chat form,
+.pet-chat-identity {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.pet-chat header {
+	justify-content: space-between;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--vscode-widget-border, transparent);
+}
+
+.pet-chat-identity {
+	min-width: 0;
+}
+
+.pet-chat-avatar {
+	width: 34px;
+	height: 34px;
+	flex: none;
+	object-fit: contain;
+	image-rendering: pixelated;
+	border-radius: 10px;
+	background: var(--vscode-editorWidget-background, var(--vscode-input-background));
+}
+
+.pet-chat h2 {
+	margin: 0;
+	font-size: 1.1em;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.pet-chat-messages {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-height: 0;
+	max-height: min(240px, 48vh);
+	overflow: auto;
+	padding: 12px;
+}
+
+.pet-chat-message {
+	align-self: flex-start;
+	max-width: 88%;
+	margin: 0;
+	padding: 8px 10px;
+	border-radius: 12px 12px 12px 4px;
+	background: var(--vscode-editorWidget-background, var(--vscode-input-background));
+	line-height: 1.4;
+	overflow-wrap: anywhere;
+	user-select: text;
+}
+
+.pet-chat-outgoing {
+	align-self: flex-end;
+	border-radius: 12px 12px 4px 12px;
+	background: var(--vscode-button-background);
+	color: var(--vscode-button-foreground);
+}
+
+.pet-chat strong {
+	display: block;
+	margin-bottom: 2px;
+	font-size: 0.85em;
+	user-select: text;
+}
+
+.pet-chat form {
+	margin: 0 10px 10px;
+	padding: 4px;
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: 12px;
+	background: var(--vscode-input-background);
+}
+
+.pet-chat form:focus-within {
+	border-color: var(--vscode-focusBorder);
+}
+
+.pet-chat input {
+	flex: 1;
+	min-width: 0;
+	padding: 6px;
+	border: 0;
+	outline: none;
+	background: transparent;
+	color: var(--vscode-input-foreground);
+	font: inherit;
+	user-select: text;
+}
+
+.pet-chat button {
+	position: relative;
+	width: 34px;
+	height: 34px;
+	flex: none;
+	padding: 0;
+	border: 0;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.pet-chat button:focus-visible {
+	outline: 2px solid var(--vscode-focusBorder);
+	outline-offset: 2px;
+}
+
+.pet-chat-close {
+	background: transparent;
+	color: inherit;
+}
+
+.pet-chat-close:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.pet-chat-close::before,
+.pet-chat-close::after {
+	content: '';
+	position: absolute;
+	inset: 16px 9px;
+	border-radius: 2px;
+	background: currentColor;
+	transform: rotate(45deg);
+}
+
+.pet-chat-close::after {
+	transform: rotate(-45deg);
+}
+
+.pet-chat-send {
+	color: var(--vscode-button-foreground);
+	background: var(--vscode-button-background);
+}
+
+.pet-chat-send:hover:enabled {
+	background: var(--vscode-button-hoverBackground);
+}
+
+.pet-chat-send:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.pet-chat-send::before {
+	content: '';
+	position: absolute;
+	inset: 10px 9px 9px 9px;
+	background: currentColor;
+	clip-path: polygon(0 0, 100% 50%, 0 100%, 17% 61%, 63% 50%, 17% 39%);
+}
+
+.pet-chat-status:not(:empty) {
+	margin: 0 12px 8px;
+	color: var(--vscode-descriptionForeground);
+	font-size: 0.85em;
+}
+
+.pet-chat-options {
+	padding: 0 12px;
+	border-bottom: 1px solid var(--vscode-widget-border, transparent);
+}
+
+.pet-chat-options summary {
+	padding: 6px 0;
+	cursor: pointer;
+	font-size: 0.9em;
+}
+
+.pet-chat-option-fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
+	gap: 8px;
+	padding-bottom: 8px;
+}
+
+.pet-chat-option-fields label {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+	font-size: 0.9em;
+}
+
+.pet-chat-option-fields input,
+.pet-chat-option-fields select {
+	width: 100%;
+	min-width: 0;
+	padding: 5px 6px;
+	border: 1px solid var(--vscode-input-border, var(--vscode-widget-border, transparent));
+	border-radius: 5px;
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	font: inherit;
+}
+
+.pet-chat-options summary:focus-visible,
+.pet-chat-option-fields input:focus-visible,
+.pet-chat-option-fields select:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: 1px;
+}

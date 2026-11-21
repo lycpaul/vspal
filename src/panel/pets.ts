@@ -7,6 +7,7 @@ import { Cockatiel } from './pets/cockatiel';
 import { Crab } from './pets/crab';
 import { Deno } from './pets/deno';
 import { Dog } from './pets/dog';
+import { Agent } from './pets/agent';
 import { Finley } from './pets/finley';
 import { Fox } from './pets/fox';
 import { Frog } from './pets/frog';
@@ -27,8 +28,10 @@ import { Totoro } from './pets/totoro';
 import { Turtle } from './pets/turtle';
 import { Zappy } from './pets/zappy';
 import { IPetType } from './states';
+import type { PetConversation } from './petChat';
 
 export class PetElement {
+    chat?: PetConversation;
     el: HTMLImageElement;
     collision: HTMLDivElement;
     speech: HTMLDivElement;
@@ -36,6 +39,7 @@ export class PetElement {
     color: PetColor;
     type: PetType;
     remove() {
+        this.chat?.close();
         this.el.remove();
         this.collision.remove();
         this.speech.remove();
@@ -213,6 +217,8 @@ export function createPet(
             return new Deno(...standardPetArguments, PetSpeed.slow);
         case PetType.dog:
             return new Dog(...standardPetArguments, PetSpeed.normal);
+        case PetType.agent:
+            return new Agent(...standardPetArguments, PetSpeed.normal);
         case PetType.finley:
             return new Finley(...standardPetArguments, PetSpeed.normal);
         case PetType.fox:
@@ -276,6 +282,8 @@ export function availableColors(petType: PetType): PetColor[] {
             return Dog.possibleColors;
         case PetType.deno:
             return Deno.possibleColors;
+        case PetType.agent:
+            return Agent.possibleColors;
         case PetType.finley:
             return Finley.possibleColors;
         case PetType.fox:

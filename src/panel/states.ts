@@ -1,4 +1,4 @@
-import { PetColor, PetType } from '../common/types';
+import { PetChatState, PetColor, PetType } from '../common/types';
 
 export interface IPetType {
     nextFrame(): void;
@@ -45,6 +45,7 @@ export class PetInstanceState {
 }
 
 export class PetElementState {
+    chat?: PetChatState;
     petState: PetInstanceState | undefined;
     petType: PetType | undefined;
     petColor: PetColor | undefined;

@@ -47,7 +47,7 @@ export class RubberDuck extends BasePetType {
         return '🐥';
     }
     get hello(): string {
-        return ` Hi, I love to quack around 👋!`;
+        return ` Hi, I love to quack around 🤗!`;
     }
 }
 

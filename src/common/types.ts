@@ -1,4 +1,62 @@
+export interface PetChatTurn {
+    role: 'user' | 'pet';
+    text: string;
+}
+
+export const PET_CHAT_EFFORTS = [
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+    'ultra',
+] as const;
+
+export interface PetChatOptions {
+    model?: string;
+    reasoningEffort?: (typeof PET_CHAT_EFFORTS)[number];
+}
+
+export interface PetChatState {
+    turns: PetChatTurn[];
+    options?: PetChatOptions;
+    pending?: { id: string; text: string; options?: PetChatOptions };
+    unread?: boolean;
+    usedFallback?: boolean;
+}
+
+export interface PetChatRequest {
+    command: 'pet-chat';
+    id: string;
+    petName: string;
+    turns: PetChatTurn[];
+    options?: PetChatOptions;
+}
+
+export interface PetChatReply {
+    command: 'pet-chat-reply';
+    id: string;
+    text?: string;
+}
+
+export type BallIcon = 'openai' | 'claude';
+
 export const enum PetColor {
+    codex = 'codex',
+    claudecode = 'claudecode',
+    side_eye = 'side_eye',
+    plus_eyes = 'plus_eyes',
+    equals_eyes = 'equals_eyes',
+    cross_eyes = 'cross_eyes',
+    slant_eyes = 'slant_eyes',
+    arch_eyes = 'arch_eyes',
+    caret_eyes = 'caret_eyes',
+    ring_eyes = 'ring_eyes',
+    dot_eyes = 'dot_eyes',
+    squint_eyes = 'squint_eyes',
+    openai_light = 'openai_light',
+    openai_dark = 'openai_dark',
+    octocat = 'octocat',
     brown = 'brown',
     whiteface = 'whiteface',
     piedpearl = 'piedpearl',
@@ -43,6 +101,7 @@ export const enum PetColor {
 }
 
 export const enum PetType {
+    agent = 'agent',
     bunny = 'bunny',
     cat = 'cat',
     chicken = 'chicken',
@@ -123,6 +182,7 @@ export class WebviewMessage {
 }
 
 export const ALL_PETS = [
+    PetType.agent,
     PetType.bunny,
     PetType.cat,
     PetType.chicken,
@@ -152,6 +212,21 @@ export const ALL_PETS = [
     PetType.zappy,
 ];
 export const ALL_COLORS = [
+    PetColor.codex,
+    PetColor.claudecode,
+    PetColor.side_eye,
+    PetColor.plus_eyes,
+    PetColor.equals_eyes,
+    PetColor.cross_eyes,
+    PetColor.slant_eyes,
+    PetColor.arch_eyes,
+    PetColor.caret_eyes,
+    PetColor.ring_eyes,
+    PetColor.dot_eyes,
+    PetColor.squint_eyes,
+    PetColor.openai_light,
+    PetColor.openai_dark,
+    PetColor.octocat,
     PetColor.black,
     PetColor.blue,
     PetColor.brown,

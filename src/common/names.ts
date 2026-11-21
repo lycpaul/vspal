@@ -24,10 +24,31 @@ import { RAT_NAMES } from '../panel/pets/rat';
 import { TURTLE_NAMES } from '../panel/pets/turtle';
 import { HORSE_NAMES } from '../panel/pets/horse';
 import { MONKEY_NAMES } from '../panel/pets/monkey';
-import { PetType } from './types';
+import { PetColor, PetType } from './types';
 import { RACCOON_NAMES } from '../panel/pets/raccoon';
 
-export function randomName(type: PetType): string {
+const agentNames: Partial<Record<PetColor, string>> = {
+    [PetColor.codex]: 'Codex',
+    [PetColor.claudecode]: 'Claude',
+    [PetColor.side_eye]: 'Grape Glance',
+    [PetColor.plus_eyes]: 'Double Plus',
+    [PetColor.equals_eyes]: 'Tangerine Twin',
+    [PetColor.cross_eyes]: 'Crossfire',
+    [PetColor.slant_eyes]: 'Blue Wince',
+    [PetColor.arch_eyes]: 'Nimbus',
+    [PetColor.caret_eyes]: 'Skipper',
+    [PetColor.ring_eyes]: 'Grape Goggles',
+    [PetColor.dot_eyes]: 'Peapod',
+    [PetColor.squint_eyes]: 'Blue Squeeze',
+    [PetColor.openai_light]: 'Dayknot',
+    [PetColor.openai_dark]: 'Nightknot',
+    [PetColor.octocat]: 'Octocat',
+};
+
+export function randomName(type: PetType, color?: PetColor): string {
+    if (type === PetType.agent) {
+        return agentNames[color ?? PetColor.codex] ?? 'Codex';
+    }
     const collection: ReadonlyArray<string> =
         (
             {

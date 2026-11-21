@@ -2,6 +2,8 @@
 import { randomName } from '../common/names';
 import {
     PetSize,
+    PetChatRequest,
+    PetChatState,
     PetColor,
     PetType,
     Theme,
@@ -9,6 +11,7 @@ import {
     WebviewMessage,
 } from '../common/types';
 import { IPetType } from './states';
+import { PetConversation } from './petChat';
 import {
     createPet,
     PetCollection,
@@ -35,7 +38,7 @@ declare global {
     interface VscodeStateApi {
         getState(): PetPanelState | undefined; // API is actually Any, but we want it to be typed.
         setState(state: PetPanelState): void;
-        postMessage(message: WebviewMessage): void;
+        postMessage(message: WebviewMessage | PetChatRequest): void;
     }
     function acquireVsCodeApi(): VscodeStateApi;
 }
@@ -74,6 +77,7 @@ function addPetToPanel(
     floor: number,
     name: string,
     stateApi?: VscodeStateApi,
+    chatState?: PetChatState,
 ): PetElement {
     var petSpriteElement: HTMLImageElement = document.createElement('img');
     petSpriteElement.className = 'pet';
@@ -89,7 +93,26 @@ function addPetToPanel(
 
     var speechBubbleElement: HTMLDivElement = document.createElement('div');
     speechBubbleElement.className = `bubble bubble-${petSize}`;
-    speechBubbleElement.innerText = 'Hello!';
+    speechBubbleElement.setAttribute('role', 'button');
+    speechBubbleElement.addEventListener('mousedown', (event) => {
+        if (speechBubbleElement.hasAttribute('data-chat-status')) {
+            event.stopPropagation();
+        }
+    });
+    speechBubbleElement.addEventListener('click', () => {
+        if (
+            document.body.classList.contains('pat-mode') ||
+            speechBubbleElement.hasAttribute('data-chat-status')
+        ) {
+            petElement.chat?.open();
+        }
+    });
+    speechBubbleElement.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            speechBubbleElement.click();
+        }
+    });
     (document.getElementById('petsContainer') as HTMLDivElement).appendChild(
         speechBubbleElement,
     );
@@ -122,7 +145,7 @@ function addPetToPanel(
         throw e;
     }
 
-    return new PetElement(
+    const petElement = new PetElement(
         petSpriteElement,
         collisionElement,
         speechBubbleElement,
@@ -130,6 +153,15 @@ function addPetToPanel(
         petColor,
         petType,
     );
+    petElement.chat = new PetConversation(
+        newPet,
+        `${root}_idle_8fps.gif`,
+        speechBubbleElement,
+        (request) => stateApi?.postMessage(request),
+        () => saveState(stateApi),
+        chatState,
+    );
+    return petElement;
 }
 
 export function saveState(stateApi?: VscodeStateApi) {
@@ -142,6 +174,7 @@ export function saveState(stateApi?: VscodeStateApi) {
     allPets.pets.forEach((petItem) => {
         state.petStates?.push({
             petName: petItem.pet.name,
+            chat: petItem.chat?.snapshot,
             petColor: petItem.color,
             petType: petItem.type,
             petState: petItem.pet.getState(),
@@ -190,8 +223,9 @@ function recoverState(
                 parseInt(p.elLeft ?? '0'),
                 parseInt(p.elBottom ?? '0'),
                 floor,
-                p.petName ?? randomName(p.petType ?? PetType.cat),
+                p.petName ?? randomName(p.petType ?? PetType.cat, p.petColor),
                 stateApi,
+                p.chat,
             );
             allPets.push(newPet);
             recoveryMap.set(newPet.pet, p);
@@ -300,24 +334,38 @@ export function petPanelApp(
                 randomStartPosition(),
                 floor,
                 floor,
-                randomName(petType),
+                randomName(petType, petColor),
                 stateApi,
             ),
         );
         saveState(stateApi);
     } else {
-        console.log('Recovering state - ', state);
+        console.log('Recovering pet state.');
         recoverState(basePetUri, petSize, floor, stateApi);
     }
 
     initCanvas(PET_CANVAS_ID);
     setupBallThrowing(PET_CANVAS_ID, petSize, floor);
 
-    if (throwBallWithMouse) {
-        dynamicThrowOn(allPets.pets);
-    } else {
-        dynamicThrowOff();
-    }
+    let mouseThrowEnabled = throwBallWithMouse;
+    let patMode = false;
+    const updateMouseThrow = () => {
+        if (mouseThrowEnabled && !patMode) {
+            dynamicThrowOn(allPets.pets);
+        } else {
+            dynamicThrowOff();
+        }
+    };
+    const setPatMode = (enabled: boolean) => {
+        patMode = enabled;
+        document.body.classList.toggle('pat-mode', enabled);
+        allPets.pets.forEach(({ speech }) => {
+            speech.tabIndex =
+                enabled || speech.hasAttribute('data-chat-status') ? 0 : -1;
+        });
+        updateMouseThrow();
+    };
+    setPatMode(true);
 
     // Initialize any effects
     if (themeInfo.effect) {
@@ -350,6 +398,7 @@ export function petPanelApp(
 
     window.addEventListener('load', () => {
         windowLoaded = true;
+        allPets.pets.forEach(({ chat }) => chat?.resume());
     });
 
     // Handle messages sent from the extension to the webview
@@ -357,14 +406,22 @@ export function petPanelApp(
         const message = event.data; // The json data that the extension sent
         switch (message.command) {
             case 'throw-with-mouse':
-                if (message.enabled) {
-                    dynamicThrowOn(allPets.pets);
-                } else {
-                    dynamicThrowOff();
+                mouseThrowEnabled = message.enabled;
+                updateMouseThrow();
+                break;
+            case 'pet-chat-reply':
+                allPets.pets.find(({ chat }) => chat?.receive(message));
+                break;
+            case 'pat-pet':
+                if (!patMode) {
+                    setPatMode(true);
                 }
                 break;
             case 'throw-ball':
-                throwAndChase(allPets.pets);
+                if (patMode) {
+                    setPatMode(false);
+                }
+                throwAndChase(allPets.pets, message.icon);
                 break;
             case 'spawn-pet':
                 allPets.push(
@@ -376,7 +433,7 @@ export function petPanelApp(
                         randomStartPosition(),
                         floor,
                         floor,
-                        message.name ?? randomName(message.type),
+                        message.name ?? randomName(message.type, message.color),
                         stateApi,
                     ),
                 );
@@ -418,7 +475,7 @@ export function petPanelApp(
                     saveState(stateApi);
                     stateApi?.postMessage({
                         command: 'info',
-                        text: '👋 Removed pet ' + message.name,
+                        text: '🤗 Removed pet ' + message.name,
                     });
                 } else {
                     stateApi?.postMessage({

@@ -29,7 +29,7 @@ export class Rocky extends BasePetType {
         return false;
     }
     get hello(): string {
-        return ` 👋 I'm rock! I always Rock`;
+        return ` 🤗 I'm rock! I always Rock`;
     }
 }
 

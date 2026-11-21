@@ -441,7 +441,7 @@ suite('Finley Test Suite', () => {
         pet.swipe();
         pet.nextFrame();
         assert.ok(image.src.endsWith('blue_swipe_8fps.gif'));
-        assert.strictEqual(speech.textContent, 'Hi! 👋');
+        assert.strictEqual(speech.textContent, 'Hi! 🤗');
         pet.swipe();
         for (let frame = 0; frame < 15; frame++) {
             pet.nextFrame();

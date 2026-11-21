@@ -67,7 +67,7 @@ export class Finley extends BasePetType {
         this.holdStateEnum = this.currentStateEnum;
         this.currentStateEnum = States.swipe;
         this.currentState = resolveState(this.currentStateEnum, this);
-        this.showSpeechBubble('Hi! 👋');
+        this.showSpeechBubble('Hi! 🤗');
     }
 }
 

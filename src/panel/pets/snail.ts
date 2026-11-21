@@ -58,7 +58,7 @@ export class Snail extends BasePetType {
     }
 
     get hello(): string {
-        return 'hello! 👋';
+        return 'hello! 🤗';
     }
 }
 
