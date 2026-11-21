@@ -80,14 +80,18 @@ export class PetConversation {
 
     private updateBubble(): void {
         const { pending, unread } = this.state;
-        const status = pending ? '💭' : unread ? '💡' : '';
+        const status = pending ? '🍳' : unread ? '💡' : '';
         const label = pending
             ? `${this.pet.name} is thinking`
             : unread
               ? `Read ${this.pet.name}’s new reply`
               : `Chat with ${this.pet.name}`;
         this.statusIcon.textContent = status;
-        this.bubble.toggleAttribute('data-chat-status', !!status);
+        if (status) {
+            this.bubble.dataset.chatStatus = pending ? 'thinking' : 'unread';
+        } else {
+            delete this.bubble.dataset.chatStatus;
+        }
         this.bubble.setAttribute('aria-label', label);
         this.bubble.title = label;
         this.bubble.tabIndex =
@@ -142,17 +146,31 @@ export class PetConversation {
 
         const modelLabel = document.createElement('label');
         modelLabel.textContent = 'Model ID';
-        const model = document.createElement('input');
-        model.value = this.state.options?.model ?? '';
-        model.placeholder = 'VS Code default';
-        model.maxLength = 128;
-        model.spellcheck = false;
-        model.setAttribute('list', 'pet-chat-models');
-        const models = document.createElement('datalist');
-        models.id = 'pet-chat-models';
-        models.append(new Option('GPT-6-Luna', 'gpt-6-luna'));
-        models.append(new Option('GPT-6-Sol', 'gpt-6-sol'));
+        const model = document.createElement('select');
+        const defaultModel = this.state.options?.model ?? '';
+        const customModelChoice = 'custom-model';
+        model.append(
+            new Option('VS Code default', ''),
+            new Option('GPT-6-Luna', 'gpt-6-luna'),
+            new Option('GPT-6-Sol', 'gpt-6-sol'),
+        );
+        const usesCustomModel = !Array.from(model.options).some(
+            (option) => option.value === defaultModel,
+        );
+        model.append(new Option('Custom model…', customModelChoice));
+        model.value = usesCustomModel ? customModelChoice : defaultModel;
         modelLabel.append(model);
+
+        const customModelLabel = document.createElement('label');
+        customModelLabel.className = 'pet-chat-custom-model';
+        customModelLabel.textContent = 'Custom model ID';
+        customModelLabel.hidden = !usesCustomModel;
+        const customModel = document.createElement('input');
+        customModel.maxLength = 128;
+        customModel.spellcheck = false;
+        customModel.autocapitalize = 'off';
+        customModel.value = usesCustomModel ? defaultModel : '';
+        customModelLabel.append(customModel);
 
         const effortLabel = document.createElement('label');
         effortLabel.textContent = 'Reasoning effort';
@@ -174,21 +192,45 @@ export class PetConversation {
 
         const saveOptions = () => {
             this.state.options = {
-                model: model.value.trim() || undefined,
+                model:
+                    (model.value === customModelChoice
+                        ? customModel.value.trim()
+                        : model.value) || undefined,
                 reasoningEffort: PET_CHAT_EFFORTS.find(
                     (value) => value === effort.value,
                 ),
             };
             this.save();
         };
-        model.addEventListener('input', saveOptions);
+        model.addEventListener('change', () => {
+            customModelLabel.hidden = model.value !== customModelChoice;
+            saveOptions();
+            if (!customModelLabel.hidden) {
+                customModel.focus();
+            }
+        });
+        customModel.addEventListener('input', saveOptions);
         effort.addEventListener('change', saveOptions);
-        fields.append(modelLabel, effortLabel);
-        options.append(summary, fields, models);
+        fields.append(modelLabel, effortLabel, customModelLabel);
+        options.append(summary, fields);
 
         const messages = document.createElement('div');
         messages.className = 'pet-chat-messages';
         messages.setAttribute('role', 'log');
+        let followLatest = true;
+        messages.addEventListener('scroll', () => {
+            followLatest =
+                messages.scrollHeight -
+                    messages.scrollTop -
+                    messages.clientHeight <=
+                2;
+        });
+        const messageResize = new ResizeObserver(() => {
+            if (followLatest) {
+                messages.scrollTop = messages.scrollHeight;
+            }
+        });
+        messageResize.observe(messages);
         const status = document.createElement('p');
         status.className = 'pet-chat-status';
         status.setAttribute('role', 'status');
@@ -259,6 +301,7 @@ export class PetConversation {
                     this.dialog = undefined;
                     this.refreshDialog = undefined;
                 }
+                messageResize.disconnect();
                 dialog.remove();
             },
             { once: true },

@@ -7,11 +7,17 @@ import {
     resolveState,
     PetInstanceState,
     isStateAboveGround,
+    clampToGround,
     BallState,
     ChaseState,
     HorizontalDirection,
     FrameResult,
 } from './states';
+
+// Pets get z-indexes in [PET_Z_INDEX_BASE, PET_Z_INDEX_BASE + PET_Z_INDEX_RANGE],
+// which must stay between --pet-canvas-container-z-index and --bubble-z-index in pets.css.
+const PET_Z_INDEX_BASE = 10;
+const PET_Z_INDEX_RANGE = 9990;
 
 export class InvalidStateError extends Error {
     fromState: States;
@@ -74,12 +80,12 @@ export abstract class BasePetType implements IPetType {
         this._floor = floor;
         this._left = left;
         this._bottom = bottom;
-        this.initSprite(size, left, bottom);
+        this._size = size;
+        this.initSprite();
         this.currentStateEnum = this.sequence.startingState;
         this.currentState = resolveState(this.currentStateEnum, this);
 
         this._name = name;
-        this._size = size;
         this._speed = this.randomizeSpeed(speed);
         if (this._name.toLowerCase() === 'debug') {
             console.log(
@@ -91,22 +97,51 @@ export abstract class BasePetType implements IPetType {
         (this.constructor as any).count += 1;
     }
 
-    initSprite(petSize: PetSize, left: number, bottom: number) {
-        this.el.style.left = `${left}px`;
-        this.el.style.bottom = `${bottom}px`;
+    private initSprite() {
+        this.el.style.bottom = `${this._bottom}px`;
+        this.updateDepth();
         this.el.style.width = 'auto';
         this.el.style.height = 'auto';
-        this.el.style.maxWidth = `${this.calculateSpriteWidth(petSize)}px`;
-        this.el.style.maxHeight = `${this.calculateSpriteWidth(petSize)}px`;
-        this.collision.style.left = `${left}px`;
-        this.collision.style.bottom = `${bottom}px`;
-        this.collision.style.width = `${this.calculateSpriteWidth(petSize)}px`;
-        this.collision.style.height = `${this.calculateSpriteWidth(petSize)}px`;
-        this.speech.style.left = `${left}px`;
-        this.speech.style.bottom = `${
-            bottom + this.calculateSpriteWidth(petSize)
-        }px`;
+        this.fitToViewport();
         this.hideSpeechBubble();
+    }
+
+    fitToViewport(): void {
+        const size = this.gridSize;
+        this.el.style.maxWidth = `${size}px`;
+        this.el.style.maxHeight = `${size}px`;
+        this.collision.style.width = `${size}px`;
+        this.collision.style.height = `${size}px`;
+        this.positionLeft(this._left);
+        // Undefined while the constructor is still running.
+        if (
+            this.currentStateEnum !== undefined &&
+            !isStateAboveGround(this.currentStateEnum)
+        ) {
+            this.positionBottom(clampToGround(this, this._bottom));
+        }
+    }
+
+    get maxLeft(): number {
+        return Math.max(0, window.innerWidth - this.gridSize);
+    }
+
+    /** Pets may walk anywhere in the bottom half of the panel. */
+    get maxBottom(): number {
+        return Math.max(
+            this._floor,
+            Math.floor(window.innerHeight / 2) - this.gridSize,
+        );
+    }
+
+    get gridSize(): number {
+        return Math.max(
+            1,
+            Math.min(
+                Math.round(this.calculateSpriteWidth(this._size) * 1.2),
+                window.innerWidth,
+            ),
+        );
     }
 
     get left(): number {
@@ -120,10 +155,8 @@ export abstract class BasePetType implements IPetType {
     private repositionAccompanyingElements() {
         this.collision.style.left = `${this._left}px`;
         this.collision.style.bottom = `${this._bottom}px`;
-        this.speech.style.left = `${this._left}px`;
-        this.speech.style.bottom = `${
-            this._bottom + this.calculateSpriteWidth(this._size)
-        }px`;
+        this.speech.style.setProperty('--pet-left', `${this._left}px`);
+        this.speech.style.bottom = `${this._bottom + this.gridSize}px`;
     }
 
     calculateSpriteWidth(size: PetSize): number {
@@ -143,11 +176,26 @@ export abstract class BasePetType implements IPetType {
     positionBottom(bottom: number): void {
         this._bottom = bottom;
         this.el.style.bottom = `${this._bottom}px`;
+        this.updateDepth();
         this.repositionAccompanyingElements();
     }
 
+    /** Draw pets lower on screen (closer to the viewer) in front of pets further up. */
+    private updateDepth(): void {
+        const depth = Math.max(
+            0,
+            Math.min(
+                PET_Z_INDEX_RANGE,
+                PET_Z_INDEX_RANGE - Math.round(this._bottom),
+            ),
+        );
+        this.el.style.zIndex = `${PET_Z_INDEX_BASE + depth}`;
+    }
+
     positionLeft(left: number): void {
-        this._left = left;
+        this._left = Number.isFinite(left)
+            ? Math.max(0, Math.min(left, this.maxLeft))
+            : 0;
         this.el.style.left = `${this._left}px`;
         this.repositionAccompanyingElements();
     }
@@ -229,9 +277,9 @@ export abstract class BasePetType implements IPetType {
         this.currentState = resolveState(this.currentStateEnum, this);
 
         if (!isStateAboveGround(this.currentStateEnum)) {
-            // Reset the bottom of the sprite to the floor as the theme
-            // has likely changed.
-            this.positionBottom(this.floor);
+            // Keep the saved position, but within the walkable area as the
+            // theme (and so the floor) or panel size may have changed.
+            this.positionBottom(clampToGround(this, this.bottom));
         }
     }
 

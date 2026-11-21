@@ -1,4 +1,6 @@
 {
+    "vscode-pets.theme.office": "Retro Office",
+    "vscode-pets.theme.kitchen": "Kitchen",
     "vscode-pets.open-popup.title": "Open vsPal Popup",
     "vscode-pets.position.popup": "Popup",
     "vscode-pets.petChat.model.description": "Codex CLI model ID for pet chat, for example gpt-6-luna.",

@@ -296,6 +296,7 @@ export function petPanelApp(
     // Apply Theme backgrounds
     const foregroundEl = document.getElementById('foreground');
     const backgroundEl = document.getElementById('background');
+    document.body.dataset.petTheme = theme;
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     backgroundEl!.style.backgroundImage = themeInfo.backgroundImageUrl(
         basePetUri,
@@ -516,6 +517,8 @@ export function petPanelApp(
     });
 
     window.addEventListener('resize', function () {
+        allPets.pets.forEach(({ pet }) => pet.fitToViewport());
+        saveState(stateApi);
         initCanvas(PET_CANVAS_ID);
         initCanvas(FOREGROUND_EFFECT_CANVAS_ID);
         initCanvas(BACKGROUND_EFFECT_CANVAS_ID);

@@ -222,6 +222,34 @@ class BarnThemeInfo extends ThemeInfo {
     }
 }
 
+class OfficeThemeInfo extends ThemeInfo {
+    name = 'office';
+    description = 'A pixel-art office with a CRT workstation';
+    backgroundRepeat = 'no-repeat';
+
+    backgroundImageUrl(basePetUri: string): string {
+        return `url('${basePetUri}/backgrounds/${this.name}/background.png')`;
+    }
+
+    foregroundImageUrl(): string {
+        return '';
+    }
+}
+
+class KitchenThemeInfo extends ThemeInfo {
+    name = 'kitchen';
+    description = 'A pixel-art restaurant kitchen with a long steel counter';
+    backgroundRepeat = 'no-repeat';
+
+    backgroundImageUrl(basePetUri: string): string {
+        return `url('${basePetUri}/backgrounds/${this.name}/background.png')`;
+    }
+
+    foregroundImageUrl(): string {
+        return '';
+    }
+}
+
 // Map of theme name to theme info
 export const THEMES: Record<Theme, ThemeInfo> = {
     none: {
@@ -248,4 +276,6 @@ export const THEMES: Record<Theme, ThemeInfo> = {
     autumn: new AutumnThemeInfo(),
     library: new LibraryThemeInfo(),
     barn: new BarnThemeInfo(),
+    office: new OfficeThemeInfo(),
+    kitchen: new KitchenThemeInfo(),
 };

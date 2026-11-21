@@ -252,7 +252,7 @@ export class Squirrel extends BasePetType {
 
     private adjustClimbHeight(): void {
         const viewportHeight = window.innerHeight;
-        const elementHeight = this.calculateSpriteWidth(this.size);
+        const elementHeight = this.gridSize;
 
         // Scale the climb height based on viewport height
         const minHeight = Math.floor(viewportHeight * 0.3);

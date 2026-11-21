@@ -713,9 +713,15 @@ export function activate(context: vscode.ExtensionContext) {
                     await vscode.commands.executeCommand('petsView.focus');
                 }
                 if (panel) {
-                    const quickPickItems =
-                        localize.stringListAsQuickPickItemList<Theme>(
-                            ALL_THEMES,
+                    const quickPickItems = localize
+                        .stringListAsQuickPickItemList<Theme>(ALL_THEMES)
+                        .map((item) =>
+                            item.value === Theme.office
+                                ? {
+                                      ...item,
+                                      label: vscode.l10n.t('Retro Office'),
+                                  }
+                                : item,
                         );
                     const selectedTheme = await vscode.window.showQuickPick(
                         quickPickItems,

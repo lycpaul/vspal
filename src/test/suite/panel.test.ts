@@ -400,7 +400,7 @@ suite('Finley Test Suite', () => {
     ALL_SCALES.forEach((size, index) => {
         test(`Supports Finley at ${size} size`, () => {
             const { image } = createFinley(size);
-            const width = `${[30, 40, 55, 110][index]}px`;
+            const width = `${[36, 48, 66, 132][index]}px`;
             assert.strictEqual(image.style.maxWidth, width);
             assert.strictEqual(image.style.maxHeight, width);
         });

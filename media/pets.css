@@ -1,11 +1,12 @@
 :root {
 	--background-effect-canvas-z-index: 1;
 	--background-z-index: 2;
-	--pet-canvas-container-z-index: 3; /* petCanvasContainer canvas, ballCanvas, img.pet */
-	--bubble-z-index: 4;
-	--foreground-effect-canvas-z-index: 5;
-	--foreground-z-index: 6;
-	--collision-z-index: 999;
+	--pet-canvas-container-z-index: 3; /* petCanvasContainer canvas, ballCanvas */
+	/* img.pet gets an inline z-index in 10..10000 from its height (basepettype.ts) */
+	--bubble-z-index: 20000;
+	--foreground-effect-canvas-z-index: 20001;
+	--foreground-z-index: 20002;
+	--collision-z-index: 30000;
 
 	--container-paddding: 20px;
 	--input-padding-vertical: 6px;
@@ -51,6 +52,21 @@ body {
 	background-attachment: fixed;
 	background-repeat: repeat-x;
 	background-position: bottom left;
+}
+
+body[data-pet-theme='office'] #background {
+	margin: 0;
+	background-size: cover;
+	background-position: center 85%;
+	image-rendering: pixelated;
+}
+
+/* Keep the cook and the foreground counter in view in wide popups. */
+body[data-pet-theme='kitchen'] #background {
+	margin: 0;
+	background-size: cover;
+	background-position: center 80%;
+	image-rendering: pixelated;
 }
 
 ol,
@@ -169,73 +185,106 @@ img.pet {
 	z-index: var(--collision-z-index);
 }
 
+.bubble,
+.pet-chat {
+	--dialog-base: #2b1a14;
+	--dialog-panel: #3c261b;
+	--dialog-edge: #916645;
+	--dialog-trim: #d3a26b;
+	--dialog-light: #ffe4b5;
+	--dialog-muted: #e2b98a;
+	--dialog-paper: #f1cfa6;
+	--dialog-ink: #382317;
+	--dialog-focus: #ffdc88;
+	--dialog-shadow: rgb(24 12 7 / 50%);
+	--dialog-paper-shadow: rgb(95 49 20 / 22%);
+	--dialog-font: silkscreen, "Courier New", monospace;
+}
+
+body[data-pet-theme='office'] :is(.bubble, .pet-chat) {
+	--dialog-base: #162d27;
+	--dialog-panel: #234237;
+	--dialog-edge: #486c5c;
+	--dialog-trim: #a0b997;
+	--dialog-light: #fbf3d9;
+	--dialog-muted: #bdd1ae;
+	--dialog-paper: #e9dfc1;
+	--dialog-ink: #182d26;
+	--dialog-focus: #cbe996;
+	--dialog-shadow: rgb(9 27 21 / 55%);
+	--dialog-paper-shadow: rgb(29 61 47 / 22%);
+}
+
+body[data-pet-theme='kitchen'] :is(.bubble, .pet-chat) {
+	--dialog-base: #012a39;
+	--dialog-panel: #0b4857;
+	--dialog-edge: #286e7e;
+	--dialog-trim: #e7926e;
+	--dialog-light: #fdf7e6;
+	--dialog-muted: #b1c9d0;
+	--dialog-paper: #c2d3d7;
+	--dialog-ink: #012a39;
+	--dialog-focus: #f8b18a;
+	--dialog-shadow: #012a398c;
+	--dialog-paper-shadow: #0b485738;
+}
+
 .bubble {
+	--bubble-unit: 1.2px;
+	--bubble-width: min(calc(52 * var(--bubble-unit)), 100vw);
+	--bubble-left: min(var(--pet-left, 0px), calc(100vw - var(--bubble-width)));
 	position: absolute;
+	left: var(--bubble-left);
+	min-width: var(--bubble-width);
+	max-width: calc(100vw - var(--bubble-left));
+	padding: calc(6 * var(--bubble-unit)) calc(8 * var(--bubble-unit));
+	border: calc(2 * var(--bubble-unit)) solid var(--dialog-trim);
+	background: var(--dialog-base);
+	color: var(--dialog-light);
+	box-shadow: inset 0 0 0 2px var(--dialog-edge), 2px 2px var(--dialog-base);
+	font: calc(12 * var(--bubble-unit)) / 1.35 var(--dialog-font);
 	text-align: center;
-	background-color: #fff;
-	color: #333;
-	font-family: silkscreen, sans-serif;
-	min-width: 60px;
-	line-height: 1.4em;
-	margin: 0px auto;
-	border: 2px solid #333;
-	border-radius: 10px;
-	padding: 10px 4px;
+	overflow-wrap: anywhere;
 	z-index: var(--bubble-z-index);
 }
 
 .bubble-nano {
-	font-size: 9px;
-}
-
-.bubble-small {
-	font-size: 10px;
-}
-
-.bubble-medium {
-	font-size: 12px;
+	font-size: calc(10 * var(--bubble-unit));
 }
 
 .bubble-large {
-	font-size: 16px;
+	font-size: calc(14 * var(--bubble-unit));
 }
 
-.bubble:before,
-.bubble:after {
-	content: ' ';
+.bubble::after {
+	content: '';
 	position: absolute;
-	width: 0;
-	height: 0;
-}
-
-.bubble-nano:before,
-.bubble-small:before,
-.bubble-medium:before,
-.bubble-large:before {
-	left: 10px;
-	bottom: -15px;
-	border: 7px solid;
-	border-color: #333 transparent transparent #333;
-}
-
-.bubble-nano:after,
-.bubble-small:after,
-.bubble-medium:after,
-.bubble-large:after {
-	left: 12px;
-	bottom: -10px;
-	border: 5px solid;
-	border-color: #fff transparent transparent #fff;
+	bottom: calc(-6 * var(--bubble-unit));
+	left: calc(10 * var(--bubble-unit));
+	width: calc(8 * var(--bubble-unit));
+	height: calc(6 * var(--bubble-unit));
+	background: var(--dialog-trim);
+	clip-path: polygon(0 0, 100% 0, 100% 33%, 75% 33%, 75% 67%, 50% 67%, 50% 100%, 0 100%);
 }
 
 .bubble:not([data-reaction-visible]):not([data-chat-status]),
 .bubble[data-chat-status] > .pet-reaction,
 .bubble:not([data-chat-status]) > .pet-chat-bubble-status {
-	display: none;
+	display: inline-block;
+	vertical-align: middle;
+	font-size: calc(14 * var(--bubble-unit));
+	line-height: 1;
 }
 
-.pet-chat-bubble-status {
-	font-size: max(16px, 1em);
+@media (prefers-reduced-motion: no-preference) {
+	.bubble[data-chat-status="thinking"] .pet-chat-bubble-status {
+		animation: pet-chat-cooking 1.2s step-end infinite;
+	}
+}
+
+@keyframes pet-chat-cooking {
+	0% { opacity: 0.72; }
+	50% { opacity: 1; }
 }
 
 .pat-mode .bubble,
@@ -244,16 +293,24 @@ img.pet {
 	z-index: calc(var(--collision-z-index) + 1);
 }
 
+.pat-mode .bubble:hover,
+.bubble[data-chat-status]:hover {
+	background: var(--dialog-panel);
+	border-color: var(--dialog-focus);
+}
+
 .pet-chat {
-	width: min(400px, calc(100% - 16px));
-	max-height: calc(100% - 16px);
+	width: min(520px, calc(100% - 20px));
+	max-height: calc(100% - 20px);
 	margin: auto;
-	padding: 0;
-	color: var(--vscode-editor-foreground);
-	background: var(--vscode-editor-background);
-	border: 1px solid var(--vscode-widget-border, var(--vscode-focusBorder));
-	border-radius: 16px;
-	box-shadow: 0 16px 48px rgb(0 0 0 / 30%);
+	padding: 4px;
+	border: 2px solid var(--dialog-trim);
+	background: var(--dialog-panel);
+	color: var(--dialog-light);
+	box-shadow: inset 0 0 0 2px var(--dialog-edge), 0 8px 24px var(--dialog-shadow);
+	font: 13px / 1.65 var(--dialog-font);
+	color-scheme: dark;
+	scrollbar-color: var(--dialog-edge) var(--dialog-base);
 }
 
 .pet-chat[open] {
@@ -262,187 +319,218 @@ img.pet {
 }
 
 .pet-chat::backdrop {
-	background: rgb(0 0 0 / 48%);
-	backdrop-filter: blur(2px);
+	background: rgb(18 10 7 / 60%);
+}
+
+body[data-pet-theme='office'] .pet-chat::backdrop {
+	background: rgb(10 27 22 / 56%);
+}
+
+body[data-pet-theme='kitchen'] .pet-chat::backdrop {
+	background: #012a398f;
 }
 
 .pet-chat header,
 .pet-chat form,
 .pet-chat-identity {
 	display: flex;
-	gap: 10px;
 	align-items: center;
+	gap: 8px;
+}
+
+.pet-chat header,
+.pet-chat-options,
+.pet-chat-status,
+.pet-chat form {
+	flex-shrink: 0;
 }
 
 .pet-chat header {
 	justify-content: space-between;
-	padding: 10px 12px;
-	border-bottom: 1px solid var(--vscode-widget-border, transparent);
+	padding: 8px;
+	background: var(--dialog-base);
+	border-bottom: 2px solid var(--dialog-edge);
 }
 
 .pet-chat-identity {
 	min-width: 0;
+	padding: 2px 10px 2px 4px;
+	border: 1px solid var(--dialog-edge);
+	background: var(--dialog-panel);
+	box-shadow: inset 0 -2px var(--dialog-base);
 }
 
 .pet-chat-avatar {
-	width: 34px;
-	height: 34px;
+	width: 30px;
+	height: 30px;
 	flex: none;
 	object-fit: contain;
 	image-rendering: pixelated;
-	border-radius: 10px;
-	background: var(--vscode-editorWidget-background, var(--vscode-input-background));
 }
 
 .pet-chat h2 {
 	margin: 0;
-	font-size: 1.1em;
-	font-weight: 600;
+	font-size: clamp(13px, 3.4vw, 18px);
+	font-weight: normal;
 	overflow-wrap: anywhere;
 }
 
 .pet-chat-messages {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 10px;
 	min-height: 0;
-	max-height: min(240px, 48vh);
+	max-height: min(310px, 48vh);
 	overflow: auto;
-	padding: 12px;
+	padding: 12px 10px;
 }
 
 .pet-chat-message {
 	align-self: flex-start;
-	max-width: 88%;
+	flex-shrink: 0;
+	max-width: 92%;
 	margin: 0;
-	padding: 8px 10px;
-	border-radius: 12px 12px 12px 4px;
-	background: var(--vscode-editorWidget-background, var(--vscode-input-background));
-	line-height: 1.4;
+	padding: 7px 10px 9px;
+	border: 1px solid var(--dialog-trim);
+	background: var(--dialog-paper);
+	color: var(--dialog-ink);
+	box-shadow: inset 0 -2px var(--dialog-paper-shadow);
 	overflow-wrap: anywhere;
 	user-select: text;
 }
 
 .pet-chat-outgoing {
 	align-self: flex-end;
-	border-radius: 12px 12px 4px 12px;
-	background: var(--vscode-button-background);
-	color: var(--vscode-button-foreground);
+	background: var(--dialog-base);
+	color: var(--dialog-light);
+	box-shadow: inset 0 -2px var(--dialog-edge);
 }
 
 .pet-chat strong {
 	display: block;
-	margin-bottom: 2px;
-	font-size: 0.85em;
+	margin-bottom: 3px;
+	font-size: 10px;
+	font-weight: normal;
 	user-select: text;
 }
 
 .pet-chat form {
-	margin: 0 10px 10px;
+	margin: 0 8px 8px;
 	padding: 4px;
-	border: 1px solid var(--vscode-input-border, transparent);
-	border-radius: 12px;
-	background: var(--vscode-input-background);
+	border: 1px solid var(--dialog-edge);
+	background: var(--dialog-base);
 }
 
 .pet-chat form:focus-within {
-	border-color: var(--vscode-focusBorder);
+	border-color: var(--dialog-focus);
 }
 
-.pet-chat input {
-	flex: 1;
+.pet-chat input,
+.pet-chat select {
 	min-width: 0;
+	color: var(--dialog-light);
+	caret-color: var(--dialog-focus);
+	font: 13px var(--vscode-font-family, monospace);
+	user-select: text;
+}
+
+.pet-chat input::placeholder {
+	color: var(--dialog-muted);
+	opacity: 1;
+}
+
+.pet-chat ::selection {
+	background: var(--dialog-focus);
+	color: var(--dialog-ink);
+}
+
+.pet-chat form input {
+	flex: 1;
 	padding: 6px;
 	border: 0;
 	outline: none;
 	background: transparent;
-	color: var(--vscode-input-foreground);
-	font: inherit;
-	user-select: text;
 }
 
 .pet-chat button {
 	position: relative;
-	width: 34px;
-	height: 34px;
+	width: 32px;
+	height: 32px;
 	flex: none;
 	padding: 0;
-	border: 0;
-	border-radius: 8px;
+	border: 1px solid var(--dialog-trim);
+	border-radius: 0;
+	background: var(--dialog-panel);
+	color: var(--dialog-light);
+	box-shadow: inset 0 -2px var(--dialog-edge);
 	cursor: pointer;
 }
 
-.pet-chat button:focus-visible {
-	outline: 2px solid var(--vscode-focusBorder);
-	outline-offset: 2px;
+.pet-chat button:hover:enabled {
+	background: var(--dialog-edge);
 }
 
-.pet-chat-close {
-	background: transparent;
-	color: inherit;
+.pet-chat button:active:enabled {
+	transform: translateY(1px);
+	box-shadow: none;
 }
 
-.pet-chat-close:hover {
-	background: var(--vscode-toolbar-hoverBackground);
-}
-
-.pet-chat-close::before,
-.pet-chat-close::after {
-	content: '';
-	position: absolute;
-	inset: 16px 9px;
-	border-radius: 2px;
-	background: currentColor;
-	transform: rotate(45deg);
-}
-
-.pet-chat-close::after {
-	transform: rotate(-45deg);
-}
-
-.pet-chat-send {
-	color: var(--vscode-button-foreground);
-	background: var(--vscode-button-background);
-}
-
-.pet-chat-send:hover:enabled {
-	background: var(--vscode-button-hoverBackground);
-}
-
-.pet-chat-send:disabled {
-	opacity: 0.5;
+.pet-chat button:disabled {
+	opacity: 0.48;
 	cursor: default;
 }
 
-.pet-chat-send::before {
+.pet-chat button:focus-visible,
+.pet-chat-options summary:focus-visible,
+.pet-chat-option-fields :is(input, select):focus-visible,
+.pat-mode .bubble:focus-visible,
+.bubble[data-chat-status]:focus-visible {
+	outline: 2px solid var(--dialog-focus);
+	outline-offset: 2px;
+}
+
+.pet-chat button::before {
 	content: '';
 	position: absolute;
-	inset: 10px 9px 9px 9px;
+	inset: 8px;
 	background: currentColor;
-	clip-path: polygon(0 0, 100% 50%, 0 100%, 17% 61%, 63% 50%, 17% 39%);
+}
+
+.pet-chat-close::before {
+	clip-path: polygon(0 0, 20% 0, 20% 20%, 40% 20%, 40% 40%, 60% 40%, 60% 20%, 80% 20%, 80% 0, 100% 0, 100% 20%, 80% 20%, 80% 40%, 60% 40%, 60% 60%, 80% 60%, 80% 80%, 100% 80%, 100% 100%, 80% 100%, 80% 80%, 60% 80%, 60% 60%, 40% 60%, 40% 80%, 20% 80%, 20% 100%, 0 100%, 0 80%, 20% 80%, 20% 60%, 40% 60%, 40% 40%, 20% 40%, 20% 20%, 0 20%);
+}
+
+.pet-chat-send::before {
+	clip-path: polygon(45% 0, 65% 0, 65% 20%, 82% 20%, 82% 40%, 100% 40%, 100% 60%, 82% 60%, 82% 80%, 65% 80%, 65% 100%, 45% 100%, 45% 60%, 0 60%, 0 40%, 45% 40%);
 }
 
 .pet-chat-status:not(:empty) {
-	margin: 0 12px 8px;
-	color: var(--vscode-descriptionForeground);
-	font-size: 0.85em;
+	margin: 0 10px 7px;
+	color: var(--dialog-muted);
+	font-size: 11px;
 }
 
 .pet-chat-options {
-	padding: 0 12px;
-	border-bottom: 1px solid var(--vscode-widget-border, transparent);
+	padding: 0 10px;
+	border-bottom: 1px solid var(--dialog-edge);
 }
 
 .pet-chat-options summary {
-	padding: 6px 0;
+	padding: 5px 0;
+	color: var(--dialog-muted);
 	cursor: pointer;
-	font-size: 0.9em;
+	font-size: 11px;
+}
+
+.pet-chat-options summary:hover,
+.pet-chat-options[open] summary {
+	color: var(--dialog-light);
 }
 
 .pet-chat-option-fields {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
-	gap: 8px;
+	grid-template-columns: repeat(auto-fit, minmax(min(124px, 100%), 1fr));
+	gap: 12px 16px;
 	padding-bottom: 8px;
 }
 
@@ -450,24 +538,109 @@ img.pet {
 	display: grid;
 	gap: 4px;
 	min-width: 0;
-	font-size: 0.9em;
+	font-size: 10px;
+}
+
+.pet-chat-custom-model {
+	grid-column: 1 / -1;
+}
+
+.pet-chat-option-fields label[hidden] {
+	display: none;
 }
 
 .pet-chat-option-fields input,
 .pet-chat-option-fields select {
 	width: 100%;
-	min-width: 0;
 	padding: 5px 6px;
-	border: 1px solid var(--vscode-input-border, var(--vscode-widget-border, transparent));
-	border-radius: 5px;
-	background: var(--vscode-input-background);
-	color: var(--vscode-input-foreground);
-	font: inherit;
+	border: 1px solid var(--dialog-edge);
+	border-radius: 0;
+	background: var(--dialog-base);
 }
 
-.pet-chat-options summary:focus-visible,
-.pet-chat-option-fields input:focus-visible,
-.pet-chat-option-fields select:focus-visible {
-	outline: 1px solid var(--vscode-focusBorder);
-	outline-offset: 1px;
+.pet-chat-option-fields select {
+	min-height: 28px;
+	font: 10px / 1.4 var(--dialog-font);
+	cursor: pointer;
+}
+
+.pet-chat-option-fields select:hover {
+	border-color: var(--dialog-trim);
+}
+
+@supports (appearance: base-select) and selector(::picker(select)) {
+	.pet-chat-option-fields select,
+	.pet-chat-option-fields select::picker(select) {
+		appearance: base-select;
+	}
+
+	.pet-chat-option-fields select:open {
+		border-color: var(--dialog-focus);
+	}
+
+	.pet-chat-option-fields select::picker-icon {
+		content: '';
+		align-self: center;
+		width: 10px;
+		height: 6px;
+		flex-shrink: 0;
+		margin-inline-start: auto;
+		background: var(--dialog-trim);
+		clip-path: polygon(0 0, 100% 0, 100% 33%, 80% 33%, 80% 67%, 60% 67%, 60% 100%, 40% 100%, 40% 67%, 20% 67%, 20% 33%, 0 33%);
+	}
+
+	.pet-chat-option-fields select:open::picker-icon {
+		background: var(--dialog-focus);
+		transform: rotate(180deg);
+	}
+
+	.pet-chat-option-fields select::picker(select) {
+		max-block-size: min(260px, 42vh);
+		margin-block: 4px;
+		padding: 3px;
+		overflow: auto;
+		border: 2px solid var(--dialog-trim);
+		border-radius: 0;
+		background: var(--dialog-base);
+		color: var(--dialog-light);
+		box-shadow: inset 0 0 0 1px var(--dialog-edge), 0 4px 12px var(--dialog-shadow);
+		font: 11px / 1.4 var(--dialog-font);
+		scrollbar-color: var(--dialog-edge) var(--dialog-base);
+	}
+
+	.pet-chat-option-fields option {
+		gap: 6px;
+		min-height: 26px;
+		padding: 4px 6px;
+		border-radius: 0;
+		cursor: pointer;
+	}
+
+	.pet-chat-option-fields option:hover,
+	.pet-chat-option-fields option:focus-visible {
+		background: var(--dialog-edge);
+		color: var(--dialog-light);
+	}
+
+	.pet-chat-option-fields option:checked {
+		background: var(--dialog-focus);
+		color: var(--dialog-ink);
+	}
+
+	.pet-chat-option-fields option:focus-visible {
+		outline: 1px solid var(--dialog-focus);
+		outline-offset: -1px;
+	}
+
+	.pet-chat-option-fields option:checked:focus-visible {
+		outline-color: var(--dialog-ink);
+	}
+
+	.pet-chat-option-fields option::checkmark {
+		content: '';
+		width: 10px;
+		height: 8px;
+		background: currentColor;
+		clip-path: polygon(0 38%, 20% 38%, 20% 63%, 40% 63%, 40% 38%, 60% 38%, 60% 13%, 80% 13%, 80% 0, 100% 0, 100% 38%, 80% 38%, 80% 63%, 60% 63%, 60% 88%, 40% 88%, 40% 100%, 20% 100%, 20% 75%, 0 75%);
+	}
 }

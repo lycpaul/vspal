@@ -89,9 +89,14 @@
                     "group": "navigation@3"
                 },
                 {
+                    "command": "vscode-pets.delete-pet",
+                    "when": "activeWebviewPanelId =~ /^(mainThreadWebview-)?petCoding$/",
+                    "group": "navigation@4"
+                },
+                {
                     "command": "vscode-pets.open-popup",
                     "when": "activeWebviewPanelId =~ /^(mainThreadWebview-)?petCoding$/ && !isWeb && !isAuxiliaryWindowFocused",
-                    "group": "navigation@4"
+                    "group": "navigation@5"
                 }
             ],
             "view/title": [
@@ -441,7 +446,9 @@
                             "winter",
                             "autumn",
                             "library",
-                            "barn"
+                            "barn",
+                            "office",
+                            "kitchen"
                         ],
                         "default": "none",
                         "description": "%vscode-pets.theme.description%",
@@ -453,7 +460,9 @@
                             "%vscode-pets.theme.winter%",
                             "%vscode-pets.theme.autumn%",
                             "%vscode-pets.theme.library%",
-                            "%vscode-pets.theme.barn%"
+                            "%vscode-pets.theme.barn%",
+                            "%vscode-pets.theme.office%",
+                            "%vscode-pets.theme.kitchen%"
                         ]
                     },
                     "vscode-pets.petChat.model": {
